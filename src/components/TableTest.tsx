@@ -81,7 +81,7 @@ function TestTable() {
     return selectedValues;
   };
 
-  const copySelected = () => {
+  const copySelected = async () => {
     if (!anchor || !current) return;
 
     const minRow = Math.min(anchor.r, current.r);
@@ -89,17 +89,48 @@ function TestTable() {
     const minCol = Math.min(anchor.c, current.c);
     const maxCol = Math.max(anchor.c, current.c);
 
-    const text = [];
+    // ---------- HTML ----------
+    let html = `<table style="border-collapse: collapse;">`;
 
     for (let r = minRow; r <= maxRow; r++) {
-      const rowValues = [];
+      html += `<tr>`;
       for (let c = minCol; c <= maxCol; c++) {
-        rowValues.push(rows[r][c]);
+        const value = rows[r][c] ?? "";
+        html += `
+        <td style="border: 1px solid #000; padding: 2px 6px;">
+          ${value}
+        </td>
+      `;
       }
-      text.push(rowValues.join("\t"));
+      html += `</tr>`;
     }
 
-    navigator.clipboard.writeText(text.join("\n"));
+    html += `</table>`;
+
+    // ---------- Plain text fallback ----------
+    const textRows: string[] = [];
+
+    for (let r = minRow; r <= maxRow; r++) {
+      const rowValues: string[] = [];
+      for (let c = minCol; c <= maxCol; c++) {
+        rowValues.push(rows[r][c] ?? "");
+      }
+      textRows.push(rowValues.join("\t"));
+    }
+
+    const text = textRows.join("\n");
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        }),
+      ]);
+    } catch {
+      // Safari / permission fallback
+      await navigator.clipboard.writeText(text);
+    }
   };
 
   useEffect(() => {
