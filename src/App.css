@@ -40,3 +40,10 @@
 .read-the-docs {
   color: #888;
 }
+
+/* globals.css */
+@layer utilities {
+  .no-selection-highlight::selection {
+    background: transparent;
+  }
+}

@@ -28,6 +28,10 @@ function TestTable() {
     },
   ];
 
+  const [editingCell, setEditingCell] = useState<{
+    r: number;
+    c: number;
+  } | null>(null);
   const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
   const [current, setCurrent] = useState<{ r: number; c: number } | null>(null);
   const [headers, setHeaders] = useState(initialHeaders);
@@ -61,24 +65,6 @@ function TestTable() {
     const maxCol = Math.max(anchor.c, current.c);
 
     return r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
-  };
-  const getSelectedValues = () => {
-    if (!anchor || !current) return [];
-
-    const minRow = Math.min(anchor.r, current.r);
-    const maxRow = Math.max(anchor.r, current.r);
-    const minCol = Math.min(anchor.c, current.c);
-    const maxCol = Math.max(anchor.c, current.c);
-
-    const selectedValues: string[] = [];
-
-    for (let r = minRow; r <= maxRow; r++) {
-      for (let c = minCol; c <= maxCol; c++) {
-        selectedValues.push(rows[r][c]);
-      }
-    }
-
-    return selectedValues;
   };
 
   const copySelected = async () => {
@@ -225,7 +211,8 @@ function TestTable() {
               {/* Row cells */}
               {row.map((cell, colIndex) => {
                 const selected = isCellSelected(rowIndex, colIndex);
-
+                const isEditing =
+                  editingCell?.r === rowIndex && editingCell?.c === colIndex;
                 return (
                   <div
                     key={colIndex}
@@ -238,19 +225,36 @@ function TestTable() {
                       if (isDragging) setCurrent({ r: rowIndex, c: colIndex });
                     }}
                     onMouseUp={() => setIsDragging(false)}
+                    onDoubleClick={() =>
+                      setEditingCell({ r: rowIndex, c: colIndex })
+                    }
                     className="flex-1 py-2 px-2 text-[11px] border-r border-gray-100 last:border-none relative"
                   >
                     {selected && (
                       <div className="absolute inset-0 bg-blue-100 opacity-40 pointer-events-none"></div>
                     )}
-                    <input
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={cell}
+                        onChange={(e) =>
+                          updateCell(rowIndex, colIndex, e.target.value)
+                        }
+                        className="bg-transparent outline-none w-full h-full text-gray-500 text-[11px]bg-green-200"
+                      />
+                    ) : (
+                      <div className="flex-1 text-[11px] text-gray-500 min-h-[16px] select-none">
+                        {cell}
+                      </div>
+                    )}
+                    {/* <input
                       type="text"
                       value={cell}
                       onChange={(e) =>
                         updateCell(rowIndex, colIndex, e.target.value)
                       }
-                      className="bg-transparent outline-none w-full  text-gray-500 text-[11px]"
-                    />
+                      className="bg-transparent outline-none w-full  text-gray-500 text-[11px] select-none caret-transparent"
+                    /> */}
                   </div>
                 );
               })}
@@ -260,7 +264,7 @@ function TestTable() {
 
         <div
           onClick={addRow}
-          className="flex items-center gap-2 cursor-pointer border-gray-100 py-1 px-2 text-[11px] text-gray-400 hover:bg-gray-50"
+          className="flex items-center gap-2 cursor-pointer border-gray-100 py-1 px-2 text-[11px] text-gray-400 hover:bg-gray-50 "
         >
           <PlusIcon className="w-3 h-3 text-gray-500" />
           <span>Add Row</span>
