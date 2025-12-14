@@ -3,18 +3,14 @@
 // import DragSelectTable from "./components/ExcelTable";
 // import SingleRow from "./components/ExcelTable";
 // import HighlightTable from "./components/HTMLTable";
+import DragTable from "./components/Drag";
 import TestTube from "./components/ExcelTable";
-import SimpleSheet from "./components/GoogleSheet";
-import TestTable from "./components/TableTest";
+import TestTable from "./components/TestTable";
 
 function App() {
   return (
     <div className="flex flex-col ">
-      {/* <CustomTable/> */}
-      {/* <SingleRow /> */}
-      {/* <SimpleSheet /> */}
-      {/* <TestTable /> */}
-      <TestTube />
+      <DragTable />
       {/* <NoHighlightInput /> */}
     </div>
   );
