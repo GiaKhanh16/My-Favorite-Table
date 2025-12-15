@@ -15,12 +15,17 @@ import {
   draggable,
   dropTargetForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
+import {
+  attachClosestEdge,
+  extractClosestEdge,
+} from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
 import { getReorderDestinationIndex } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 
 function TestTube() {
+  const [closestEdge, setClosestEdge] = useState(null);
+
   const initialHeaders = [
     { label: "Name" },
     { label: "Birthday" },
@@ -299,6 +304,7 @@ const DataRow = ({
   const rowRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const [draggingRow, setDraggingRow] = useState<number | null>(null);
+  const [closestEdge, setClosestEdge] = useState(null);
 
   useEffect(() => {
     const rowEl = rowRef.current;
@@ -326,8 +332,27 @@ const DataRow = ({
             { type: "row", rowIndex },
             { input, element, allowedEdges: ["top", "bottom"] }
           ),
-        onDrop: () => setDraggingRow(null),
         getIsSticky: () => true,
+        onDragEnter: (args) => {
+          if (args.source.data.rowIndex !== rowIndex) {
+            setClosestEdge(extractClosestEdge(args.self.data));
+          }
+        },
+
+        onDrag: (args) => {
+          if (args.source.data.rowIndex !== rowIndex) {
+            setClosestEdge(extractClosestEdge(args.self.data));
+          }
+        },
+        onDragLeave: () => {
+          // Reset the closest edge when the draggable item leaves the drop zone
+          setClosestEdge(null);
+        },
+        onDrop: () => {
+          // Reset the closest edge when the draggable item is dropped
+          setDraggingRow(null);
+          setClosestEdge(null);
+        },
       })
     );
   }, [rowIndex, setIsDragging]);
@@ -401,6 +426,35 @@ const DataRow = ({
           </div>
         );
       })}
+      {closestEdge && <DropIndicator edge={closestEdge} gap="0px" />}
+    </div>
+  );
+};
+const DropIndicator = ({
+  edge,
+  gap,
+}: {
+  edge: "top" | "bottom";
+  gap: string;
+}) => {
+  const isTop = edge === "top";
+
+  return (
+    <div
+      className={`absolute left-1 top-0 right-0 bg-blue-300 h-[3px] z-10 pointer-events-none`}
+      style={{
+        top: isTop ? `calc(-0.65 * (${gap} + 2px))` : undefined,
+        bottom: !isTop ? `calc(-0.65 * (${gap} + 2px))` : undefined,
+      }}
+    >
+      {/* Small circle indicator */}
+      <span
+        className="absolute w-1.5 h-1.5 border-2 border-blue-500 rounded-full"
+        style={{
+          top: "-4px",
+          left: "-10px",
+        }}
+      ></span>
     </div>
   );
 };
