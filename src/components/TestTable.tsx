@@ -26,6 +26,8 @@ function TestTable() {
     ["Bob", "02/02/1985", "Los Angeles", "987-654-3210", "@bob"],
     ["Charlie", "03/03/1992", "Chicago", "555-555-5555", "@charlie"],
   ]);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLDivElement>(null);
 
   const [editingCell, setEditingCell] = useState<{
     r: number;
@@ -65,6 +67,7 @@ function TestTable() {
   const iconRefs = useRef<(HTMLDivElement | null)[]>([]);
   const initializedRows = useRef<Set<number>>(new Set());
   const [draggingRow, setDraggingRow] = useState<number | null>(null);
+
   useEffect(() => {
     rows.forEach((_, rowIndex) => {
       if (initializedRows.current.has(rowIndex)) return; // already initialized
