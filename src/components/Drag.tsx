@@ -1,6 +1,6 @@
 import { PlusIcon, TrashIcon, Squares2X2Icon } from "@heroicons/react/24/solid";
 import { useEffect, useRef, useState, useCallback } from "react";
-import TableHeader from "./subComponents/tableHeader";
+import TableHeader from "./subComponents/TableHeader";
 import invariant from "tiny-invariant";
 import {
   draggable,

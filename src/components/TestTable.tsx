@@ -10,7 +10,7 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import { getReorderDestinationIndex } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index";
 import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
 import { useState, useEffect, useRef } from "react";
-import TableHeader from "./subComponents/tableHeader";
+import TableHeader from "./subComponents/TableHeader";
 
 function TestTable() {
   const initialHeaders = [

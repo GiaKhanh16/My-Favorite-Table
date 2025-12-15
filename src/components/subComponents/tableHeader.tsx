@@ -1,14 +1,4 @@
-import {
-  UserIcon,
-  CakeIcon,
-  MapIcon,
-  PhoneIcon,
-  GlobeAltIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/solid";
-import { useState, useEffect } from "react";
-import type { TableHeaderProps } from "../Utils/types";
+import type { TableHeaderProps } from "../utils/types";
 
 export default function TableHeader({ headers, setHeaders }: TableHeaderProps) {
   return (

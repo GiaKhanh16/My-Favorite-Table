@@ -1,15 +1,7 @@
-import {
-  UserIcon,
-  CakeIcon,
-  MapIcon,
-  PhoneIcon,
-  GlobeAltIcon,
-  PlusIcon,
-  TrashIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/solid";
+import { PlusIcon, TrashIcon, Squares2X2Icon } from "@heroicons/react/24/solid";
 import { useState, useEffect, useRef, useCallback } from "react";
-import invariant from "tiny-invariant";
+import type { DataRowProps } from "./utils/types";
+import type { TableHeaderProps } from "./utils/types";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
   draggable,
@@ -23,9 +15,7 @@ import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
 import { getReorderDestinationIndex } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 
-function TestTube() {
-  const [closestEdge, setClosestEdge] = useState(null);
-
+export default function TestTube() {
   const initialHeaders = [
     { label: "Name" },
     { label: "Birthday" },
@@ -198,13 +188,19 @@ function TestTube() {
   useEffect(() => {
     return monitorForElements({
       onDrop: ({ source, location }) => {
+        // Make sure the type is "row" first
         if (source.data.type !== "row") return;
 
-        const draggedIndex = source.data.rowIndex;
+        // Assert source.data has rowIndex
+        const draggedData = source.data as { type: "row"; rowIndex: number };
+        const draggedIndex = draggedData.rowIndex;
 
         if (location.current.dropTargets.length === 1) {
           const targetRecord = location.current.dropTargets[0];
-          const targetIndex = targetRecord.data.rowIndex;
+
+          // Assert targetRecord.data has rowIndex
+          const targetData = targetRecord.data as { rowIndex: number };
+          const targetIndex = targetData.rowIndex;
 
           if (draggedIndex === targetIndex) return;
 
@@ -213,7 +209,7 @@ function TestTube() {
             indexOfTarget: targetIndex,
             closestEdgeOfTarget: null,
             axis: "vertical",
-          });
+          }) as number;
 
           reorderRow({
             startIndex: draggedIndex,
@@ -229,26 +225,7 @@ function TestTube() {
       <div className="flex flex-col w-full max-w-4xl border border-gray-200 rounded relative">
         {/* HEADER */}
         <div className="flex border-b border-gray-200">
-          {headers.map((header, index) => (
-            <label
-              key={index}
-              className={`flex items-center gap-2 flex-1 text-left text-[11px] py-2 px-2 text-gray-400 hover:bg-gray-50 ${
-                index < headers.length - 1 ? "border-r border-gray-100" : ""
-              }`}
-              style={{ fontWeight: 500 }}
-            >
-              <input
-                type="text"
-                value={header.label}
-                onChange={(e) => {
-                  const newHeaders = [...headers];
-                  newHeaders[index].label = e.target.value;
-                  setHeaders(newHeaders);
-                }}
-                className="bg-transparent outline-none w-full selection:bg-gray-300 selection:text-white text-[11px]"
-              />
-            </label>
-          ))}
+          <TableHeader headers={headers} setHeaders={setHeaders} />
         </div>
 
         {/* DATA ROWS */}
@@ -285,13 +262,12 @@ function TestTube() {
   );
 }
 
-export default TestTube;
+// export default TestTube;
 
 const DataRow = ({
   rowData,
   rowIndex,
   onDelete,
-  headers,
   updateCell,
   isCellSelected,
   editingCell,
@@ -300,11 +276,12 @@ const DataRow = ({
   setCurrent,
   isDragging,
   setIsDragging,
-}) => {
+}: DataRowProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const [draggingRow, setDraggingRow] = useState<number | null>(null);
-  const [closestEdge, setClosestEdge] = useState(null);
+  const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
+  type Edge = "top" | "bottom";
 
   useEffect(() => {
     const rowEl = rowRef.current;
@@ -335,13 +312,13 @@ const DataRow = ({
         getIsSticky: () => true,
         onDragEnter: (args) => {
           if (args.source.data.rowIndex !== rowIndex) {
-            setClosestEdge(extractClosestEdge(args.self.data));
+            setClosestEdge(extractClosestEdge(args.self.data) as Edge | null);
           }
         },
 
         onDrag: (args) => {
           if (args.source.data.rowIndex !== rowIndex) {
-            setClosestEdge(extractClosestEdge(args.self.data));
+            setClosestEdge(extractClosestEdge(args.self.data) as Edge | null);
           }
         },
         onDragLeave: () => {
@@ -398,10 +375,10 @@ const DataRow = ({
               if (isDragging) setCurrent({ r: rowIndex, c: colIndex });
             }}
             onMouseUp={() => setIsDragging(false)}
-            className="flex-1 py-2 px-2 text-[11px] border-r border-gray-100 last:border-none relative"
+            className="flex-1 py-2 px-2 text-[11px] border-r border-gray-100 last:border-none relative hover:bg-gray-50"
           >
             {selected && (
-              <div className="absolute inset-0 bg-blue-100 opacity-40 pointer-events-none" />
+              <div className="absolute inset-0 bg-blue-100 opacity-40 pointer-events-none " />
             )}
             {isEditing ? (
               <input
@@ -415,7 +392,7 @@ const DataRow = ({
               />
             ) : (
               <div
-                className="flex-1 text-[11px] text-gray-500 min-h-[16px] select-none"
+                className="flex-1 text-[11px] text-gray-500 min-h-4 select-none"
                 onDoubleClick={() =>
                   setEditingCell({ r: rowIndex, c: colIndex })
                 }
@@ -441,7 +418,7 @@ const DropIndicator = ({
 
   return (
     <div
-      className={`absolute left-1 top-0 right-0 bg-blue-300 h-[3px] z-10 pointer-events-none`}
+      className={`absolute left-1 top-0 right-0 bg-blue-300 h-0.75 z-10 pointer-events-none`}
       style={{
         top: isTop ? `calc(-0.65 * (${gap} + 2px))` : undefined,
         bottom: !isTop ? `calc(-0.65 * (${gap} + 2px))` : undefined,
@@ -458,3 +435,32 @@ const DropIndicator = ({
     </div>
   );
 };
+
+function TableHeader({ headers, setHeaders }: TableHeaderProps) {
+  return (
+    <>
+      {headers.map((item, index) => (
+        <label
+          key={index}
+          className={`flex items-center gap-2 flex-1 text-left text-[11px] py-2 px-2 text-gray-400 hover:bg-gray-50 ${
+            index < headers.length - 1 ? "border-r border-gray-100" : ""
+          }`}
+          style={{ fontWeight: 500 }}
+        >
+          <input
+            className="bg-transparent outline-none w-full selection:bg-gray-300 selection:text-white text-[11px]"
+            value={item.label}
+            onChange={(e) => {
+              const newHeader = [...headers];
+              newHeader[index] = {
+                ...newHeader[index],
+                label: e.target.value,
+              };
+              setHeaders(newHeader);
+            }}
+          />
+        </label>
+      ))}
+    </>
+  );
+}
