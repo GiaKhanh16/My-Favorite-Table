@@ -1,39 +1,30 @@
 // DataRows.tsx
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { getReorderDestinationIndex } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index";
-import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
-import { Cell } from "./Cell";
+// import { Cell } from "./subComponents/Cell";
+import { useTableStore } from "./ZustandStore";
+import { ZustandCell } from "./ZustandCell";
 
 export type Column = { id: string; name: string };
 export type Row = Record<string, string>;
 
-// ------------------- UTILS -------------------
-export const updateCell = (
-  rows: Row[],
-  rowIndex: number,
-  colId: string,
-  value: string
-): Row[] => {
-  const newRows = [...rows];
-  newRows[rowIndex] = { ...newRows[rowIndex], [colId]: value };
-  return newRows;
-};
+// ------------------- UTILS (UNCHANGED) -------------------
+export const getDestinationIndex = ({
+  startIndex,
+  targetIndex,
+}: {
+  startIndex: number;
+  targetIndex: number;
+}) =>
+  getReorderDestinationIndex({
+    startIndex,
+    indexOfTarget: targetIndex,
+    closestEdgeOfTarget: null,
+    axis: "vertical",
+  }) as number;
 
-export const isCellSelected = (
-  anchor: { r: number; c: number } | null,
-  current: { r: number; c: number } | null,
-  r: number,
-  c: number
-) => {
-  if (!anchor || !current) return false;
-  const minRow = Math.min(anchor.r, current.r);
-  const maxRow = Math.max(anchor.r, current.r);
-  const minCol = Math.min(anchor.c, current.c);
-  const maxCol = Math.max(anchor.c, current.c);
-  return r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
-};
 export const copySelected = async (
   rows: Row[],
   columns: Column[],
@@ -82,76 +73,29 @@ export const copySelected = async (
   }
 };
 
-export const reorderRow = ({
-  rows,
-  startIndex,
-  finishIndex,
-}: {
-  rows: Row[];
-  startIndex: number;
-  finishIndex: number;
-}) => reorder({ list: rows, startIndex, finishIndex });
+export function ZustandRow() {
+  // -------- Zustand (replacing useState) --------
+  const {
+    columns,
+    rows,
+    anchor,
+    current,
+    editingCell,
+    // isDragging,
 
-export const deleteRow = (rows: Row[], rowIndex: number) =>
-  rows.filter((_, i) => i !== rowIndex);
+    updateCell,
+    // deleteRow,
+    reorderRow,
 
-export const getDestinationIndex = ({
-  startIndex,
-  targetIndex,
-}: {
-  startIndex: number;
-  targetIndex: number;
-}) =>
-  getReorderDestinationIndex({
-    startIndex,
-    indexOfTarget: targetIndex,
-    closestEdgeOfTarget: null,
-    axis: "vertical",
-  }) as number;
+    setAnchor,
+    setCurrent,
+    setEditingCell,
+    // setIsDragging,
 
-// ------------------- COMPONENT -------------------
-export default function DataRows() {
-  const [headers, _] = useState<Column[]>([
-    { id: "col1", name: "Name" },
-    { id: "col2", name: "Birthday" },
-    { id: "col3", name: "Location" },
-    { id: "col4", name: "Contact" },
-    { id: "col5", name: "Social" },
-  ]);
+    // isCellSelected,
+  } = useTableStore();
 
-  const [rows, setRows] = useState<Row[]>([
-    {
-      col1: "Alice",
-      col2: "01/01/1990",
-      col3: "New York",
-      col4: "123-456-7890",
-      col5: "@alice",
-    },
-    {
-      col1: "Bob",
-      col2: "02/02/1985",
-      col3: "Los Angeles",
-      col4: "987-654-3210",
-      col5: "@bob",
-    },
-    {
-      col1: "Charlie",
-      col2: "03/03/1992",
-      col3: "Chicago",
-      col4: "555-555-5555",
-      col5: "@charlie",
-    },
-  ]);
-
-  const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
-  const [current, setCurrent] = useState<{ r: number; c: number } | null>(null);
-  const [editingCell, setEditingCell] = useState<{
-    r: number;
-    c: number;
-  } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  // ------------------- REORDER -------------------
+  // ------------------- REORDER (UNCHANGED LOGIC) -------------------
   const handleReorder = useCallback(
     ({
       startIndex,
@@ -160,20 +104,18 @@ export default function DataRows() {
       startIndex: number;
       finishIndex: number;
     }) => {
-      setRows((prevRows) =>
-        reorderRow({ rows: prevRows, startIndex, finishIndex })
-      );
+      reorderRow(startIndex, finishIndex);
     },
-    []
+    [reorderRow]
   );
 
-  // ------------------- KEYBOARD EVENTS -------------------
+  // ------------------- KEYBOARD EVENTS (UNCHANGED) -------------------
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
         if (!anchor || !current) return;
         e.preventDefault();
-        copySelected(rows, headers, anchor, current);
+        copySelected(rows, columns, anchor, current);
         return;
       }
 
@@ -187,8 +129,9 @@ export default function DataRows() {
       ) {
         e.preventDefault();
         const { r, c } = current;
-        const colId = headers[c].id;
-        setRows((prev) => updateCell(prev, r, colId, e.key));
+        const colId = columns[c].id;
+
+        updateCell(r, colId, e.key); // ✅ just call the action
         setEditingCell({ r, c });
         return;
       }
@@ -212,7 +155,7 @@ export default function DataRows() {
           c = Math.max(0, c - 1);
           break;
         case "ArrowRight":
-          c = Math.min(headers.length - 1, c + 1);
+          c = Math.min(columns.length - 1, c + 1);
           break;
         default:
           return;
@@ -229,27 +172,27 @@ export default function DataRows() {
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () =>
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [anchor, current, rows, headers, editingCell]);
-
-  // ------------------- DRAG & DROP -------------------
+  }, [anchor, current, rows, columns, editingCell]);
+  // ------------------- DRAG & DROP (UNCHANGED) -------------------
   useEffect(() => {
     return monitorForElements({
       onDrop: ({ source, location }) => {
         if (source.data.type !== "row") return;
 
-        const draggedIndex = (source.data as { type: "row"; rowIndex: number })
-          .rowIndex;
+        const draggedIndex = (source.data as { rowIndex: number }).rowIndex;
 
         if (location.current.dropTargets.length === 1) {
           const targetIndex = (
             location.current.dropTargets[0].data as { rowIndex: number }
           ).rowIndex;
+
           if (draggedIndex === targetIndex) return;
 
           const destinationIndex = getDestinationIndex({
             startIndex: draggedIndex,
             targetIndex,
           });
+
           handleReorder({
             startIndex: draggedIndex,
             finishIndex: destinationIndex,
@@ -259,38 +202,39 @@ export default function DataRows() {
     });
   }, [handleReorder]);
 
-  // ------------------- RENDER -------------------
+  // ------------------- RENDER (UNCHANGED) -------------------
   return (
     <div className="relative">
       {rows.map((row, rowIndex) => (
-        <Cell
+        <ZustandCell
           key={rowIndex}
           rowData={row}
           rowIndex={rowIndex}
-          headers={headers}
-          updateCell={(r, colId, val) =>
-            setRows((prev) => updateCell(prev, r, colId, val))
-          }
-          isCellSelected={(r, c) => isCellSelected(anchor, current, r, c)}
-          editingCell={editingCell}
-          setEditingCell={setEditingCell}
-          setAnchor={setAnchor}
-          setCurrent={setCurrent}
-          deleteRow={() => setRows((prevRows) => deleteRow(prevRows, rowIndex))}
-          isDragging={isDragging}
-          setIsDragging={setIsDragging}
+          headers={columns}
         />
       ))}
 
       <button
         onClick={() =>
-          setRows([...rows, Object.fromEntries(headers.map((h) => [h.id, ""]))])
+          useTableStore.setState((state) => {
+            state.rows.push(Object.fromEntries(columns.map((h) => [h.id, ""])));
+          })
         }
         className="flex items-center gap-2 cursor-pointer border-gray-100 py-1 px-2 text-[11px] text-gray-400 hover:bg-gray-50 w-full"
       >
         <PlusIcon className="w-3 h-3 text-gray-500" />
         <span className="select-none">Add Row</span>
       </button>
+    </div>
+  );
+}
+
+export default function ZustandContainer() {
+  return (
+    <div className="flex justify-center items-start min-h-screen p-6 relative mt-15">
+      <div className="flex flex-col  max-w-4xl border border-gray-200 rounded relative">
+        <ZustandRow />
+      </div>
     </div>
   );
 }

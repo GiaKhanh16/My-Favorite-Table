@@ -1,6 +1,5 @@
 import { PlusIcon, TrashIcon, Squares2X2Icon } from "@heroicons/react/24/solid";
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { DataRowProps } from "./utils/types";
 import type { TableHeaderProps } from "./utils/types";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
@@ -16,14 +15,6 @@ import { getReorderDestinationIndex } from "@atlaskit/pragmatic-drag-and-drop-hi
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 
 export default function TestTube() {
-  const initialHeaders = [
-    { label: "Name" },
-    { label: "Birthday" },
-    { label: "Location" },
-    { label: "Contact" },
-    { label: "Social" },
-  ];
-
   const [editingCell, setEditingCell] = useState<{
     r: number;
     c: number;
@@ -31,8 +22,15 @@ export default function TestTube() {
 
   const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
   const [current, setCurrent] = useState<{ r: number; c: number } | null>(null);
-  const [headers, setHeaders] = useState(initialHeaders);
+  const [headers, setHeaders] = useState([
+    { label: "Name" },
+    { label: "Birthday" },
+    { label: "Location" },
+    { label: "Contact" },
+    { label: "Social" },
+  ]);
   const [isDragging, setIsDragging] = useState(false);
+
   const [rows, setRows] = useState<string[][]>([
     ["Alice", "01/01/1990", "New York", "123-456-7890", "@alice"],
     ["Bob", "02/02/1985", "Los Angeles", "987-654-3210", "@bob"],
@@ -437,6 +435,9 @@ const DropIndicator = ({
 };
 
 function TableHeader({ headers, setHeaders }: TableHeaderProps) {
+  const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
+  const [current, setCurrent] = useState<{ r: number; c: number } | null>(null);
+
   return (
     <>
       {headers.map((item, index) => (
@@ -463,4 +464,18 @@ function TableHeader({ headers, setHeaders }: TableHeaderProps) {
       ))}
     </>
   );
+}
+interface DataRowProps {
+  rowData: string[];
+  rowIndex: number;
+  onDelete: (rowIndex: number) => void;
+  headers: { label: string }[];
+  updateCell: (rowIndex: number, colIndex: number, value: string) => void;
+  isCellSelected: (r: number, c: number) => boolean;
+  editingCell: { r: number; c: number } | null;
+  setEditingCell: (cell: { r: number; c: number } | null) => void;
+  setAnchor: (pos: { r: number; c: number } | null) => void;
+  setCurrent: (pos: { r: number; c: number } | null) => void;
+  isDragging: boolean;
+  setIsDragging: (dragging: boolean) => void;
 }
