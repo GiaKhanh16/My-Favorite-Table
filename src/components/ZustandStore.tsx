@@ -7,9 +7,7 @@ export type Column = { id: string; name: string; width: number };
 export type Row = Record<string, string>;
 
 type Pos = { r: number; c: number } | null;
-
 type TableState = {
-  // -------- state --------
   columns: Column[];
   rows: Row[];
 
@@ -18,10 +16,11 @@ type TableState = {
   editingCell: Pos;
   isDragging: boolean;
 
-  // -------- actions --------
   updateCell: (rowIndex: number, colId: string, value: string) => void;
   deleteRow: (rowIndex: number) => void;
+
   reorderRow: (startIndex: number, finishIndex: number) => void;
+  reorderColumn: (startIndex: number, finishIndex: number) => void;
 
   setAnchor: (pos: Pos) => void;
   setCurrent: (pos: Pos) => void;
@@ -29,9 +28,10 @@ type TableState = {
   setIsDragging: (val: boolean) => void;
 
   setColumnWidth: (colId: string, width: number) => void;
-  // -------- selectors --------
+  setColumnName: (colId: string, name: string) => void;
+  addColumn: () => void;
+
   isCellSelected: (r: number, c: number) => boolean;
-  ensureSize: (rows: number, cols: number) => void;
 };
 
 export const useTableStore = create<TableState>()(
@@ -75,6 +75,13 @@ export const useTableStore = create<TableState>()(
     isDragging: false,
 
     // -------- actions --------
+
+    setColumnName: (colId, name) =>
+      set((state) => {
+        const col = state.columns.find((c) => c.id === colId);
+        if (col) col.name = name;
+      }),
+
     updateCell: (rowIndex, colId, value) =>
       set((state) => {
         state.rows[rowIndex][colId] = value;
@@ -84,25 +91,21 @@ export const useTableStore = create<TableState>()(
       set((state) => {
         state.rows.splice(rowIndex, 1);
       }),
-
-    ensureSize: (rows: number, cols: number) =>
+    reorderColumn: (startIndex: number, finishIndex: number) =>
       set((state) => {
-        const currentRows = state.rows.length;
-        const currentCols = state.columns.length;
+        state.columns = reorder({
+          list: state.columns,
+          startIndex,
+          finishIndex,
+        });
 
-        // Add new rows if needed
-        for (let r = currentRows; r < rows; r++) {
+        state.rows = state.rows.map((row) => {
           const newRow: Row = {};
-          state.columns.forEach((col) => (newRow[col.id] = ""));
-          state.rows.push(newRow);
-        }
-
-        // Add new columns if needed
-        for (let c = currentCols; c < cols; c++) {
-          const id = `col${c + 1}`;
-          state.columns.push({ id, name: id, width: 150 });
-          state.rows.forEach((row) => (row[id] = ""));
-        }
+          state.columns.forEach((col) => {
+            newRow[col.id] = row[col.id];
+          });
+          return newRow;
+        });
       }),
 
     reorderRow: (startIndex, finishIndex) =>
@@ -139,7 +142,6 @@ export const useTableStore = create<TableState>()(
         const col = state.columns.find((c) => c.id === colId);
         if (col) col.width = width; // only updates the dragged column
       }),
-    // -------- selector --------
     isCellSelected: (r, c) => {
       const { anchor, current } = get();
       if (!anchor || !current) return false;
@@ -151,5 +153,13 @@ export const useTableStore = create<TableState>()(
 
       return r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
     },
+    addColumn: () =>
+      set((state) => {
+        const newColId = `col${state.columns.length + 1}`;
+        state.columns.push({ id: newColId, name: `New Col`, width: 150 });
+        state.rows.forEach((row) => {
+          row[newColId] = "";
+        });
+      }),
   }))
 );

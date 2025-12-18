@@ -435,8 +435,6 @@ const DropIndicator = ({
 };
 
 function TableHeader({ headers, setHeaders }: TableHeaderProps) {
-  const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
-  const [current, setCurrent] = useState<{ r: number; c: number } | null>(null);
 
   return (
     <>

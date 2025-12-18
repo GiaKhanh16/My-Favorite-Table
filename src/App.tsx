@@ -1,7 +1,8 @@
+import { Table } from "./components/67";
 import TestTube from "./components/ExcelTable";
 import TableContainer from "./components/MainTable";
 import PasteTable from "./components/PasteTable";
-import ZustandContainer from "./components/ZustandRow";
+import ZustandContainer from "./components/ZustandTable";
 
 function App() {
   return (
