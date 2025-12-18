@@ -27,6 +27,7 @@ export function ZusHeaderCell({
 
   const [isDragging, setIsDragging] = useState(false);
 
+  const [isResizing, setIsResizing] = useState(false);
   // Resize
   useEffect(() => {
     if (!resizeHandleRef.current) return;
@@ -40,12 +41,15 @@ export function ZusHeaderCell({
     };
 
     const onMouseUp = () => {
+      setIsResizing(false);
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
 
     const onMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
       e.stopPropagation();
+      setIsResizing(true);
       startX = e.clientX;
       startWidth = col.width;
       document.addEventListener("mousemove", onMouseMove);
@@ -60,7 +64,7 @@ export function ZusHeaderCell({
   // Drag & drop
   useEffect(() => {
     const el = columnRef.current;
-    if (!el) return;
+    if (!el || isResizing) return;
 
     return combine(
       draggable({
@@ -90,7 +94,7 @@ export function ZusHeaderCell({
         },
       })
     );
-  }, [col.id, index, reorderColumn]);
+  }, [col.id, index, reorderColumn, isResizing]);
 
   return (
     <label
@@ -98,9 +102,9 @@ export function ZusHeaderCell({
       style={{ width: col.width, flex: "none", fontWeight: 500 }}
       className={`
         relative flex items-center gap-2 px-2 py-2 text-[11px]
-        text-gray-400 hover:bg-gray-100 transition-all duration-200
+        text-gray-400 hover:bg-gray-100
         ${!isLast ? "border-r border-gray-200" : ""}
-        ${isDragging ? "bg-blue-100 shadow-lg scale-105 z-20" : "bg-gray-50"}
+        ${isDragging ? "bg-blue-100 shadow-lg scale-105 z-20" : ""}
       `}
     >
       <input
@@ -112,6 +116,7 @@ export function ZusHeaderCell({
       {/* resize handle */}
       <div
         ref={resizeHandleRef}
+        style={{ pointerEvents: "auto" }}
         className="absolute top-0 right-0 h-full w-1 cursor-col-resize z-10"
       />
     </label>
