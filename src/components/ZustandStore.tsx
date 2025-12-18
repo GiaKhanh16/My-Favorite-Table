@@ -74,7 +74,6 @@ export const useTableStore = create<TableState>()(
     editingCell: null,
     isDragging: false,
 
-    // -------- actions --------
 
     setColumnName: (colId, name) =>
       set((state) => {

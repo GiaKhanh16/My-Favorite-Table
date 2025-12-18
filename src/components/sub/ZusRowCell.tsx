@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { useTableStore, type Column, type Row } from "../ZustandStore";
 import { handlePasteEvent } from "../utils/ZusUtil";
 
@@ -24,12 +23,9 @@ export const ZustandCellItem = ({
     setCurrent,
     isDragging,
     setIsDragging,
-    setColumnWidth,
     rows,
     columns,
   } = useTableStore();
-
-  const resizeHandleRef = useRef<HTMLDivElement>(null);
 
   const selected = isCellSelected(rowIndex, colIndex);
   const isEditing = editingCell?.r === rowIndex && editingCell?.c === colIndex;
@@ -38,35 +34,6 @@ export const ZustandCellItem = ({
   const onPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     handlePasteEvent(e, rowIndex, colIndex, rows, columns, updateCell);
   };
-
-  // ---------------- column resize ----------------
-  useEffect(() => {
-    if (!resizeHandleRef.current) return;
-    let startX = 0;
-    let startWidth = col.width;
-
-    const onMouseMove = (e: MouseEvent) => {
-      const delta = e.clientX - startX;
-      setColumnWidth(col.id, Math.max(30, startWidth + delta));
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      e.stopPropagation();
-      startX = e.clientX;
-      startWidth = col.width;
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-    };
-
-    resizeHandleRef.current.addEventListener("mousedown", onMouseDown);
-    return () =>
-      resizeHandleRef.current?.removeEventListener("mousedown", onMouseDown);
-  }, [col.width, col.id]);
 
   return (
     <div

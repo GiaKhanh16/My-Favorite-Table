@@ -15,6 +15,8 @@ export const getDestinationIndex = ({
     axis: "vertical",
   }) as number;
 
+
+
 export const copySelected = async (
   rows: Row[],
   columns: Column[],
@@ -31,6 +33,18 @@ export const copySelected = async (
   let html = `<table style="border-collapse: collapse;">`;
   const textRows: string[] = [];
 
+  // --- Add header row first ---
+  html += `<tr>`;
+  const headerValues: string[] = [];
+  for (let c = minCol; c <= maxCol; c++) {
+    const colName = columns[c].name;
+    html += `<th style="border:1px solid #000; padding:2px 6px; background:#eee;">${colName}</th>`;
+    headerValues.push(colName);
+  }
+  html += `</tr>`;
+  textRows.push(headerValues.join("\t"));
+
+  // --- Add selected row values ---
   for (let r = minRow; r <= maxRow; r++) {
     html += `<tr>`;
     const rowValues: string[] = [];
