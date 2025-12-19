@@ -1,5 +1,5 @@
 import { useTableStore, type Column, type Row } from "../ZustandStore";
-import { handlePasteEvent } from "../utils/ZusUtil";
+// import { handlePasteEvent } from "../utils/ZusUtil";
 
 type ZustandCellItemProps = {
   rowData: Row;
@@ -23,17 +23,12 @@ export const ZustandCellItem = ({
     setCurrent,
     isDragging,
     setIsDragging,
-    rows,
-    columns,
   } = useTableStore();
 
   const selected = isCellSelected(rowIndex, colIndex);
   const isEditing = editingCell?.r === rowIndex && editingCell?.c === colIndex;
   const value = rowData[col.id] ?? "";
-
-  const onPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    handlePasteEvent(e, rowIndex, colIndex, rows, columns, updateCell);
-  };
+  const { pasteData } = useTableStore();
 
   return (
     <div
@@ -58,7 +53,11 @@ export const ZustandCellItem = ({
         <input
           autoFocus
           value={value}
-          onPaste={onPaste}
+          onPaste={(e) => {
+            e.preventDefault();
+            const clipboardText = e.clipboardData.getData("text/plain");
+            pasteData(rowIndex, colIndex, clipboardText);
+          }}
           onChange={(e) => updateCell(rowIndex, col.id, e.target.value)}
           onBlur={() => setEditingCell(null)}
           onKeyDown={(e) => e.key === "Enter" && setEditingCell(null)}

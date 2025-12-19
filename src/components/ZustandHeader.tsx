@@ -7,7 +7,7 @@ export default function ZustandHeader() {
   const addColumn = useTableStore((s) => s.addColumn);
 
   return (
-    <div className="relative group flex rounded bg-gray-50 ">
+    <div className="relative flex rounded bg-gray-50 ">
       {columns.map((col, index) => (
         <ZusHeaderCell
           key={col.id}
@@ -17,15 +17,11 @@ export default function ZustandHeader() {
         />
       ))}
 
-      {/* Plus icon */}
       <button
         onClick={addColumn}
         className="
           absolute -right-6 top-1/2 -translate-y-1/2
-          opacity-0 group-hover:opacity-100
-          transition-opacity
           text-gray-400 hover:text-gray-600
-          z-30
         "
       >
         <PlusCircleIcon className="w-3.5 h-3.5" />

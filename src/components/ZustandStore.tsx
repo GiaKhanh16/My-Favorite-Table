@@ -32,17 +32,27 @@ type TableState = {
   addColumn: () => void;
 
   isCellSelected: (r: number, c: number) => boolean;
+
+  highlightedColumns: string[];
+  setHighlightedColumns: (cols: string[]) => void;
+  deleteColumn: (colId: string) => void;
+
+  pasteData: (
+    startRow: number,
+    startCol: number,
+    clipboardText: string,
+    isCellEditable?: (rowIndex: number, col: Column) => boolean
+  ) => void;
 };
 
 export const useTableStore = create<TableState>()(
   immer((set, get) => ({
-    // -------- initial state --------
     columns: [
-      { id: "col1", name: "Name", width: 150 },
-      { id: "col2", name: "Birthday", width: 150 },
-      { id: "col3", name: "Location", width: 150 },
-      { id: "col4", name: "Contact", width: 150 },
-      { id: "col5", name: "Social", width: 150 },
+      { id: "col1", name: "A", width: 150 },
+      { id: "col2", name: "B", width: 150 },
+      { id: "col3", name: "C", width: 150 },
+      { id: "col4", name: "D", width: 150 },
+      { id: "col5", name: "E", width: 150 },
     ],
 
     rows: [
@@ -73,12 +83,22 @@ export const useTableStore = create<TableState>()(
     current: null,
     editingCell: null,
     isDragging: false,
+    highlightedColumns: [],
 
+    setHighlightedColumns: (cols) => set({ highlightedColumns: cols }),
 
     setColumnName: (colId, name) =>
       set((state) => {
         const col = state.columns.find((c) => c.id === colId);
         if (col) col.name = name;
+      }),
+
+    deleteColumn: (id) =>
+      set((state) => {
+        state.columns = state.columns.filter((c) => c.id !== id);
+        state.rows.forEach((row) => {
+          delete row[id];
+        });
       }),
 
     updateCell: (rowIndex, colId, value) =>
@@ -158,6 +178,42 @@ export const useTableStore = create<TableState>()(
         state.columns.push({ id: newColId, name: `New Col`, width: 150 });
         state.rows.forEach((row) => {
           row[newColId] = "";
+        });
+      }),
+
+    pasteData: (startRow, startCol, clipboardText) =>
+      set((state) => {
+        const delimiter = clipboardText.includes("\t") ? "\t" : ",";
+        const pastedRows = clipboardText
+          .split("\n")
+          .map((r) => r.trim())
+          .filter((r) => r.length > 0)
+          .map((r) => r.split(delimiter));
+
+        const pastedRowCount = pastedRows.length;
+        const pastedColCount = pastedRows[0]?.length || 0;
+
+        // Add rows if needed
+        while (state.rows.length < startRow + pastedRowCount) {
+          const newRow: Row = {};
+          state.columns.forEach((col) => (newRow[col.id] = ""));
+          state.rows.push(newRow);
+        }
+
+        // Add columns if needed
+        while (state.columns.length < startCol + pastedColCount) {
+          const newColId = `col${state.columns.length + 1}`;
+          state.columns.push({ id: newColId, name: `New Col`, width: 150 });
+          state.rows.forEach((row) => (row[newColId] = ""));
+        }
+
+        // Paste data
+        pastedRows.forEach((row, rIndex) => {
+          const targetRow = startRow + rIndex;
+          row.forEach((value, cIndex) => {
+            const targetCol = state.columns[startCol + cIndex];
+            if (targetCol) state.rows[targetRow][targetCol.id] = value;
+          });
         });
       }),
   }))

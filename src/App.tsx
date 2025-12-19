@@ -7,6 +7,7 @@ import ZustandContainer from "./components/ZustandTable";
 function App() {
   return (
     <div className="flex flex-col ">
+      
       <ZustandContainer />
     </div>
   );

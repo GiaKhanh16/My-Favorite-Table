@@ -22,6 +22,7 @@ export function ZustandRow() {
     setAnchor,
     setCurrent,
     setEditingCell,
+    pasteData,
   } = useTableStore();
 
   const handleReorder = useCallback(
@@ -36,17 +37,33 @@ export function ZustandRow() {
     },
     [reorderRow]
   );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Copy (Cmd/Ctrl + C)
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
         if (!anchor || !current) return;
         e.preventDefault();
+
+        // Copy the selected cells
         copySelected(rows, columns, anchor, current);
+
+        // Highlight the header columns in Zustand
+        const minCol = Math.min(anchor.c, current.c);
+        const maxCol = Math.max(anchor.c, current.c);
+        const columnsToHighlight = columns
+          .slice(minCol, maxCol + 1)
+          .map((col) => col.id);
+
+        useTableStore.getState().setHighlightedColumns(columnsToHighlight);
+
+        // Remove highlight after a short delay
+        setTimeout(() => {
+          useTableStore.getState().setHighlightedColumns([]);
+        }, 150);
+
         return;
       }
 
-      // Typing a character to edit
       if (
         current &&
         !editingCell &&
@@ -103,14 +120,11 @@ export function ZustandRow() {
       if (!current) return;
       e.preventDefault();
 
-      handlePasteEvent(
-        e as unknown as React.ClipboardEvent,
-        current.r,
-        current.c,
-        rows,
-        columns,
-        updateCell
-      );
+      const clipboardText = e.clipboardData?.getData("text/plain");
+      if (!clipboardText) return;
+
+      // Use Zustand pasteData
+      useTableStore.getState().pasteData(current.r, current.c, clipboardText);
 
       setEditingCell({ r: current.r, c: current.c });
     };

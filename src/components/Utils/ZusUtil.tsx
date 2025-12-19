@@ -15,8 +15,6 @@ export const getDestinationIndex = ({
     axis: "vertical",
   }) as number;
 
-
-
 export const copySelected = async (
   rows: Row[],
   columns: Column[],
@@ -110,3 +108,80 @@ export function handlePasteEvent(
     });
   });
 }
+
+export function checkHeaderHighlight(
+  colId: string,
+  draggedCells: { row: number; column: string }[]
+) {
+  if (!draggedCells || draggedCells.length === 0) return false;
+
+  return draggedCells.some((cell) => cell.column === colId);
+}
+
+// utils/ZusUtil.ts
+
+// type TableStoreActions = {
+//   columns: Column[];
+//   rows: Row[];
+//   updateCell: (rowIndex: number, colId: string, value: string) => void;
+//   addColumn: () => void;
+// };
+
+// /**
+//  * Handles pasting into your Zustand table store.
+//  * Appends rows/columns if needed and updates via updateCell/addColumn.
+//  */
+// export function handlePasteEvent(
+//   startRow: number,
+//   startColIndex: number,
+//   clipboardText: string,
+//   store: TableStoreActions,
+//   isCellEditable?: (rowIndex: number, col: Column) => boolean
+// ) {
+//   if (!clipboardText) return;
+
+//   const delimiter = clipboardText.includes("\t") ? "\t" : ",";
+//   const pastedRows = clipboardText
+//     .split("\n")
+//     .map((r) => r.trim())
+//     .filter((r) => r.length > 0)
+//     .map((r) => r.split(delimiter));
+
+//   const pastedRowCount = pastedRows.length;
+//   const pastedColCount = pastedRows[0]?.length || 0;
+
+//   const requiredRows = startRow + pastedRowCount;
+//   const requiredCols = startColIndex + pastedColCount;
+
+//   // Add new rows if needed
+//   while (store.rows.length < requiredRows) {
+//     const newRow: Row = {};
+//     store.columns.forEach((col) => {
+//       newRow[col.id] = "";
+//     });
+//     store.rows.push(newRow);
+//   }
+
+//   // Add new columns if needed
+//   while (store.columns.length < requiredCols) {
+//     store.addColumn();
+//   }
+
+//   // Paste values
+//   pastedRows.forEach((rowValues, rIndex) => {
+//     const targetRow = startRow + rIndex;
+//     rowValues.forEach((value, cIndex) => {
+//       const targetColIndex = startColIndex + cIndex;
+//       const targetCol = store.columns[targetColIndex];
+//       if (!targetCol) return;
+
+//       const editable = isCellEditable
+//         ? isCellEditable(targetRow, targetCol)
+//         : true;
+
+//       if (editable) {
+//         store.updateCell(targetRow, targetCol.id, value);
+//       }
+//     });
+//   });
+// }

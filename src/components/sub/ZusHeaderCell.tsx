@@ -6,7 +6,8 @@ import {
   dropTargetForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-
+import { TrashIcon } from "@heroicons/react/24/solid";
+import { useViewStore } from "../utils/Toggle";
 type Column = { id: string; name: string; width: number };
 
 export function ZusHeaderCell({
@@ -21,14 +22,17 @@ export function ZusHeaderCell({
   const columnRef = useRef<HTMLLabelElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
 
+  const { view, setView } = useViewStore();
   const setColumnWidth = useTableStore((s) => s.setColumnWidth);
   const reorderColumn = useTableStore((s) => s.reorderColumn);
   const setColumnName = useTableStore((s) => s.setColumnName);
+  const highlightedColumns = useTableStore((s) => s.highlightedColumns);
+  const deleteColumn = useTableStore((s) => s.deleteColumn);
 
   const [isDragging, setIsDragging] = useState(false);
 
   const [isResizing, setIsResizing] = useState(false);
-  // Resize
+
   useEffect(() => {
     if (!resizeHandleRef.current) return;
 
@@ -99,21 +103,41 @@ export function ZusHeaderCell({
   return (
     <label
       ref={columnRef}
-      style={{ width: col.width, flex: "none", fontWeight: 500 }}
-      className={`
-        relative flex items-center gap-2 px-2 py-2 text-[11px]
-        text-gray-400 hover:bg-gray-100
-        ${!isLast ? "border-r border-gray-200" : ""}
-        ${isDragging ? "bg-blue-100 shadow-lg scale-105 z-20" : ""}
-      `}
+      style={{
+        width: col.width,
+        flex: "none",
+        fontWeight: 500,
+        transition: "background 0.3s ease",
+      }}
+      className={` group
+  relative flex items-center gap-2 px-2 py-2 text-[11px]
+  text-gray-400 hover:bg-gray-100
+  ${!isLast ? "border-r border-gray-200" : ""}
+  ${isDragging ? "bg-blue-100 shadow-lg scale-105 z-20" : ""}
+    ${highlightedColumns.includes(col.id) ? "bg-blue-200" : ""}
+`}
     >
-      <input
-        className="bg-transparent outline-none w-full text-[11px]"
-        value={col.name}
-        onChange={(e) => setColumnName(col.id, e.target.value)}
-      />
+      {view == "table" ? (
+        <input
+          className="bg-transparent outline-none w-full text-[11px]"
+          value={col.name}
+          onChange={(e) => setColumnName(col.id, e.target.value)}
+        />
+      ) : (
+        <div className="bg-transparent outline-none w-full text-[11px] min-h-4"></div>
+      )}
 
-      {/* resize handle */}
+      <button
+        className="
+    absolute right-3 top-1/2 -translate-y-1/2
+    opacity-0 group-hover:opacity-100
+    transition-opacity
+    text-gray-400
+    z-20
+  "
+      >
+        <TrashIcon className="w-3 h-3" onClick={() => deleteColumn(col.id)} />
+      </button>
       <div
         ref={resizeHandleRef}
         style={{ pointerEvents: "auto" }}
