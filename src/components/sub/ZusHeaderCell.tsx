@@ -22,16 +22,16 @@ export function ZusHeaderCell({
   const columnRef = useRef<HTMLLabelElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
 
-  const { view, setView } = useViewStore();
+  const { view } = useViewStore();
   const setColumnWidth = useTableStore((s) => s.setColumnWidth);
   const reorderColumn = useTableStore((s) => s.reorderColumn);
   const setColumnName = useTableStore((s) => s.setColumnName);
   const highlightedColumns = useTableStore((s) => s.highlightedColumns);
   const deleteColumn = useTableStore((s) => s.deleteColumn);
-
   const [isDragging, setIsDragging] = useState(false);
-
   const [isResizing, setIsResizing] = useState(false);
+  const selectedColumns = useTableStore((s) => s.selectedColumns);
+  const isSelected = selectedColumns.includes(col.id);
 
   useEffect(() => {
     if (!resizeHandleRef.current) return;
@@ -115,6 +115,7 @@ export function ZusHeaderCell({
   ${!isLast ? "border-r border-gray-200" : ""}
   ${isDragging ? "bg-blue-100 shadow-lg scale-105 z-20" : ""}
     ${highlightedColumns.includes(col.id) ? "bg-blue-200" : ""}
+    ${isSelected ? "bg-gray-200" : ""}
 `}
     >
       {view == "table" ? (

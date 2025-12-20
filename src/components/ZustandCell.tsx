@@ -65,6 +65,9 @@ export const ZustandCell = ({ rowData, rowIndex }: ZustandCellProps) => {
     );
   }, [rowIndex, setIsDragging, editingCell]);
 
+
+  
+
   return (
     <div
       ref={rowRef}

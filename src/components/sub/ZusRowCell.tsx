@@ -1,5 +1,4 @@
 import { useTableStore, type Column, type Row } from "../ZustandStore";
-// import { handlePasteEvent } from "../utils/ZusUtil";
 
 type ZustandCellItemProps = {
   rowData: Row;
@@ -60,7 +59,36 @@ export const ZustandCellItem = ({
           }}
           onChange={(e) => updateCell(rowIndex, col.id, e.target.value)}
           onBlur={() => setEditingCell(null)}
-          onKeyDown={(e) => e.key === "Enter" && setEditingCell(null)}
+          // onKeyDown={(e) => e.key === "Enter" && setEditingCell(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              e.preventDefault();
+              e.stopPropagation();
+
+              setEditingCell(null);
+
+              const state = useTableStore.getState();
+              const colCount = state.columns.length;
+              const rowCount = state.rows.length;
+
+              let nextR = rowIndex;
+              let nextC = colIndex;
+
+              if (e.shiftKey) {
+                nextC = Math.max(0, colIndex - 1);
+              } else {
+                if (colIndex < colCount - 1) {
+                  nextC = colIndex + 1;
+                } else {
+                  nextC = 0;
+                  nextR = Math.min(rowCount - 1, rowIndex + 1);
+                }
+              }
+
+              state.setAnchor({ r: nextR, c: nextC });
+              state.setCurrent({ r: nextR, c: nextC });
+            }
+          }}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="bg-transparent outline-none w-full h-full text-gray-500 text-[11px]"

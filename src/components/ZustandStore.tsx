@@ -35,8 +35,8 @@ type TableState = {
 
   highlightedColumns: string[];
   setHighlightedColumns: (cols: string[]) => void;
+  selectedColumns: string[];
   deleteColumn: (colId: string) => void;
-
   pasteData: (
     startRow: number,
     startCol: number,
@@ -84,6 +84,8 @@ export const useTableStore = create<TableState>()(
     editingCell: null,
     isDragging: false,
     highlightedColumns: [],
+    highlightedOnSelection: [],
+    selectedColumns: [],
 
     setHighlightedColumns: (cols) => set({ highlightedColumns: cols }),
 

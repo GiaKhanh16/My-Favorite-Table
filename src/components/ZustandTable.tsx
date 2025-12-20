@@ -4,17 +4,9 @@ import ViewToggle from "./sub/Toggle";
 
 export default function ZustandContainer() {
   return (
-    <div className="flex flex-col items-center min-h-screen p-6 relative mt-15">
+    <div className="flex flex-col items-start min-h-screen p-6 relative m-20">
       {/* Toggle aligned to the left */}
-      <div
-        style={{
-          width: "100%",
-          marginBottom: "1rem",
-          display: "flex",
-          justifyContent: "center", // start centered
-          transform: "translateX(-315px)", // <-- brute force move left
-        }}
-      >
+      <div className="w-full mb-4 flex justify-start">
         <ViewToggle />
       </div>
 

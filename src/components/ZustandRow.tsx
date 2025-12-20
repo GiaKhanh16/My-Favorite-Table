@@ -1,12 +1,8 @@
 // DataRows.tsx
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import {
-  copySelected,
-  getDestinationIndex,
-  handlePasteEvent,
-} from "./utils/ZusUtil";
+import { copySelected, getDestinationIndex } from "./utils/ZusUtil";
 import { useTableStore } from "./ZustandStore";
 import { ZustandCell } from "./ZustandCell";
 
@@ -22,7 +18,6 @@ export function ZustandRow() {
     setAnchor,
     setCurrent,
     setEditingCell,
-    pasteData,
   } = useTableStore();
 
   const handleReorder = useCallback(
@@ -37,6 +32,18 @@ export function ZustandRow() {
     },
     [reorderRow]
   );
+  
+  const selectedColumnIds = useMemo(() => {
+    if (!anchor || !current) return [];
+    const minCol = Math.min(anchor.c, current.c);
+    const maxCol = Math.max(anchor.c, current.c);
+    return columns.slice(minCol, maxCol + 1).map((c) => c.id);
+  }, [anchor, current, columns]);
+
+  // Set it in Zustand so headers can read it
+  useEffect(() => {
+    useTableStore.setState({ selectedColumns: selectedColumnIds });
+  }, [selectedColumnIds]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -44,10 +51,8 @@ export function ZustandRow() {
         if (!anchor || !current) return;
         e.preventDefault();
 
-        // Copy the selected cells
         copySelected(rows, columns, anchor, current);
 
-        // Highlight the header columns in Zustand
         const minCol = Math.min(anchor.c, current.c);
         const maxCol = Math.max(anchor.c, current.c);
         const columnsToHighlight = columns
@@ -56,7 +61,6 @@ export function ZustandRow() {
 
         useTableStore.getState().setHighlightedColumns(columnsToHighlight);
 
-        // Remove highlight after a short delay
         setTimeout(() => {
           useTableStore.getState().setHighlightedColumns([]);
         }, 150);
@@ -81,10 +85,32 @@ export function ZustandRow() {
         return;
       }
 
-      // Enter or F2 to start editing
       if (current && !editingCell && (e.key === "Enter" || e.key === "F2")) {
         e.preventDefault();
         setEditingCell({ r: current.r, c: current.c });
+        return;
+      }
+
+      if (e.key === "Tab") {
+        if (!current || editingCell) return;
+
+        e.preventDefault();
+
+        let { r, c } = current;
+
+        if (e.shiftKey) {
+          c = Math.max(0, c - 1);
+        } else {
+          if (c < columns.length - 1) {
+            c += 1;
+          } else {
+            c = 0;
+            r = Math.min(rows.length - 1, r + 1);
+          }
+        }
+
+        setAnchor({ r, c });
+        setCurrent({ r, c });
         return;
       }
 
