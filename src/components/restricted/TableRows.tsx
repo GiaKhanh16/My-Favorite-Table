@@ -9,21 +9,51 @@ import {
   extractClosestEdge,
 } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { Squares2X2Icon, TrashIcon } from "@heroicons/react/24/solid";
-import { useTableStore } from "./ZustandStore";
-import type { Row } from "./ZustandStore";
-import { ZustandCellItem } from "./sub/ZusRowCell";
+import { TableCell } from "./TableCell";
 
-type ZustandCellProps = {
+export type Column = { id: string; name: string; width: number };
+export type Row = Record<string, string>;
+type Pos = { r: number; c: number } | null;
+
+type TableRowProps = {
   rowData: Row;
   rowIndex: number;
+  deleteRow: (rowIndex: number) => void;
+  editingCell: Pos;
+  setEditingCell: (pos: Pos) => void;
+  isDragging: boolean;
+  setIsDragging: (dragging: boolean) => void;
+  columns: Column[];
+  rows: Row[];
+  isCellSelected: (r: number, c: number) => boolean;
+  updateCell: (rowIndex: number, colId: string, value: string) => void;
+  setAnchor: React.Dispatch<React.SetStateAction<Pos>>;
+  setCurrent: React.Dispatch<React.SetStateAction<Pos>>;
+  pasteData: (
+    startRow: number,
+    startCol: number,
+    clipboardText: string
+  ) => void;
 };
-
-export const ZustandRows = ({ rowData, rowIndex }: ZustandCellProps) => {
+export const TableRows = ({
+  rowData,
+  rowIndex,
+  columns,
+  deleteRow,
+  editingCell,
+  setEditingCell,
+  isDragging,
+  setIsDragging,
+  isCellSelected,
+  setAnchor,
+  setCurrent,
+  updateCell,
+  pasteData,
+  rows,
+}: TableRowProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const [closestEdge, setClosestEdge] = useState<"top" | "bottom" | null>(null);
-
-  const { deleteRow, editingCell, setIsDragging, columns } = useTableStore();
 
   useEffect(() => {
     if (!rowRef.current || !handleRef.current) return;
@@ -85,12 +115,23 @@ export const ZustandRows = ({ rowData, rowIndex }: ZustandCellProps) => {
       </div>
 
       {columns.map((col, colIndex) => (
-        <ZustandCellItem
+        <TableCell
           key={col.id}
           rowData={rowData}
           rowIndex={rowIndex}
           col={col}
           colIndex={colIndex}
+          updateCell={updateCell}
+          isCellSelected={isCellSelected}
+          editingCell={editingCell}
+          setEditingCell={setEditingCell}
+          setAnchor={setAnchor}
+          setCurrent={setCurrent}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
+          pasteData={pasteData}
+          columns={columns}
+          rows={rows}
         />
       ))}
 

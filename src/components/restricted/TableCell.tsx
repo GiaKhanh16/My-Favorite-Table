@@ -1,33 +1,51 @@
-import { useTableStore, type Column, type Row } from "../ZustandStore";
+export type Column = { id: string; name: string; width: number };
 
-type ZustandCellItemProps = {
+export type Row = Record<string, string>;
+
+type Pos = { r: number; c: number } | null;
+
+type TableCellProps = {
   rowData: Row;
   rowIndex: number;
   col: Column;
   colIndex: number;
+  updateCell: (rowIndex: number, colId: string, value: string) => void;
+  isCellSelected: (r: number, c: number) => boolean;
+  editingCell: Pos;
+  setEditingCell: (pos: Pos) => void;
+  setAnchor: (pos: Pos) => void;
+  setCurrent: (pos: Pos) => void;
+  isDragging: boolean;
+  setIsDragging: (dragging: boolean) => void;
+  pasteData: (
+    startRow: number,
+    startCol: number,
+    clipboardText: string
+  ) => void;
+  columns: Column[];
+  rows: Row[];
 };
 
-export const ZustandCellItem = ({
+export const TableCell = ({
   rowData,
   rowIndex,
   col,
   colIndex,
-}: ZustandCellItemProps) => {
-  const {
-    updateCell,
-    isCellSelected,
-    editingCell,
-    setEditingCell,
-    setAnchor,
-    setCurrent,
-    isDragging,
-    setIsDragging,
-  } = useTableStore();
-
+  updateCell,
+  isCellSelected,
+  editingCell,
+  setEditingCell,
+  setAnchor,
+  setCurrent,
+  isDragging,
+  setIsDragging,
+  pasteData,
+  columns,
+  rows,
+}: TableCellProps) => {
   const selected = isCellSelected(rowIndex, colIndex);
   const isEditing = editingCell?.r === rowIndex && editingCell?.c === colIndex;
   const value = rowData[col.id] ?? "";
-  const { pasteData } = useTableStore();
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -95,9 +113,8 @@ export const ZustandCellItem = ({
 
               setEditingCell(null);
 
-              const state = useTableStore.getState();
-              const colCount = state.columns.length;
-              const rowCount = state.rows.length;
+              const colCount = columns.length;
+              const rowCount = rows.length;
 
               let nextR = rowIndex;
               let nextC = colIndex;
@@ -113,8 +130,8 @@ export const ZustandCellItem = ({
                 }
               }
 
-              state.setAnchor({ r: nextR, c: nextC });
-              state.setCurrent({ r: nextR, c: nextC });
+              setAnchor({ r: nextR, c: nextC });
+              setCurrent({ r: nextR, c: nextC });
             }
           }}
           onMouseDown={(e) => e.stopPropagation()}

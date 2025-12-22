@@ -1,14 +1,9 @@
-import { Table } from "./components/67";
-import TestTube from "./components/ExcelTable";
-import TableContainer from "./components/MainTable";
-import PasteTable from "./components/PasteTable";
-import ZustandContainer from "./components/ZustandTable";
+import { TableRowBody } from "./components/restricted/TableRowBody";
 
 function App() {
   return (
     <div className="flex flex-col ">
-      
-      <ZustandContainer />
+      <TableRowBody />
     </div>
   );
 }

@@ -25,3 +25,4 @@ export type TableHeaderType = {
   label: string;
 };
 
+export type Pos = { r: number; c: number } | null;

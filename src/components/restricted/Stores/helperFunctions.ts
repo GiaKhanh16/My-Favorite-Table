@@ -1,6 +1,6 @@
 import { getReorderDestinationIndex } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index";
-import type { Column, Row } from "../ZustandStore";
-import { useViewStore } from "./Toggle";
+import type { Column, Row } from "./TableStore";
+import { GlobalViewControl } from "./TableStore";
 
 export const getDestinationIndex = ({
   startIndex,
@@ -32,7 +32,7 @@ export const copySelected = async (
   let html = `<table style="border-collapse: collapse;">`;
   const textRows: string[] = [];
 
-  const view = useViewStore.getState().view;
+  const view = GlobalViewControl.getState().view;
 
   // --- Add header row first ---
   if (view !== "grid") {

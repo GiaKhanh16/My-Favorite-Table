@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useTableStore } from "../ZustandStore";
+import { tableStore } from "./Stores/TableStore";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
   draggable,
@@ -7,32 +7,70 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { TrashIcon } from "@heroicons/react/24/solid";
-import { useViewStore } from "../utils/Toggle";
+import { GlobalViewControl } from "./Stores/TableStore";
+import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
 type Column = { id: string; name: string; width: number };
 
-export function ZusHeaderCell({
+export type Row = Record<string, string>;
+export function TableHeaderCell({
   col,
   index,
   isLast,
+  highlightedColumns,
+  flashingColumns,
 }: {
   col: Column;
   index: number;
   isLast: boolean;
+  highlightedColumns: string[];
+  flashingColumns: string[];
 }) {
   const columnRef = useRef<HTMLLabelElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
 
-  const { view } = useViewStore();
-  const setColumnWidth = useTableStore((s) => s.setColumnWidth);
-  const reorderColumn = useTableStore((s) => s.reorderColumn);
-  const setColumnName = useTableStore((s) => s.setColumnName);
-  const highlightedColumns = useTableStore((s) => s.highlightedColumns);
-  const deleteColumn = useTableStore((s) => s.deleteColumn);
+  const { view } = GlobalViewControl();
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const selectedColumns = useTableStore((s) => s.selectedColumns);
-  const isSelected = selectedColumns.includes(col.id);
+  const isSelected = flashingColumns.includes(col.id);
+  const deleteColumn = (id: string) => {
+    tableStore.setState((state) => {
+      state.columns = state.columns.filter((c) => c.id !== id);
+      state.rows.forEach((row) => {
+        delete row[id];
+      });
+    });
+  };
 
+  const setColumnName = (colId: string, name: string) => {
+    tableStore.setState((state) => {
+      const col = state.columns.find((c) => c.id === colId);
+      if (col) col.name = name;
+    });
+  };
+
+  const setColumnWidth = (colId: string, width: number) => {
+    tableStore.setState((state) => {
+      const col = state.columns.find((c) => c.id === colId);
+      if (col) col.width = width;
+    });
+  };
+
+  const reorderColumn = (startIndex: number, finishIndex: number) => {
+    tableStore.setState((state) => {
+      state.columns = reorder({
+        list: state.columns,
+        startIndex,
+        finishIndex,
+      });
+      state.rows = state.rows.map((row) => {
+        const newRow: Row = {};
+        state.columns.forEach((col) => {
+          newRow[col.id] = row[col.id];
+        });
+        return newRow;
+      });
+    });
+  };
   useEffect(() => {
     if (!resizeHandleRef.current) return;
 

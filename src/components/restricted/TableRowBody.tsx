@@ -1,24 +1,121 @@
 // DataRows.tsx
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { copySelected, getDestinationIndex } from "./utils/ZusUtil";
-import { useTableStore } from "./ZustandStore";
-import { ZustandRows } from "./ZustandCell";
+import { copySelected, getDestinationIndex } from "./Stores/helperFunctions";
+import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
+import { TableRows } from "./TableRows";
+import { tableStore } from "./Stores/TableStore";
+import ViewToggle from "../sub/Toggle";
+import TableHeader from "./TableHeader";
+// get reactive state
 
-export function ZustandTableBody() {
-  const {
-    columns,
-    rows,
-    current,
-    anchor,
-    setAnchor,
-    editingCell,
-    updateCell,
-    reorderRow,
-    setCurrent,
-    setEditingCell,
-  } = useTableStore();
+export type Column = { id: string; name: string; width: number };
+export type Row = Record<string, string>;
+type Pos = { r: number; c: number } | null;
+
+export function TableRowBody() {
+  const columns = tableStore((s) => s.columns);
+  const rows = tableStore((s) => s.rows);
+  const [highlightedColumns, setHighlightedColumns] = useState<string[]>([]);
+  const [anchor, setAnchor] = useState<Pos>(null);
+  const [current, setCurrent] = useState<Pos>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [flashingColumns, setFlashingColumns] = useState<string[]>([]);
+  const [editingCell, setEditingCell] = useState<Pos>(null);
+
+  const pasteData = (
+    startRow: number,
+    startCol: number,
+    clipboardText: string
+  ) => {
+    const delimiter = clipboardText.includes("\t") ? "\t" : ",";
+    const pastedRows = clipboardText
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .map((r) => r.split(delimiter));
+
+    const pastedRowCount = pastedRows.length;
+    const pastedColCount = pastedRows[0]?.length || 0;
+
+    tableStore.setState((state) => {
+      let nextColumns = [...state.columns];
+      let nextRows = [...state.rows];
+
+      while (nextColumns.length < startCol + pastedColCount) {
+        const newColId = `col${nextColumns.length + 1}`;
+        nextColumns.push({ id: newColId, name: "New Col", width: 150 });
+      }
+
+      // expand rows
+      while (nextRows.length < startRow + pastedRowCount) {
+        const newRow: Row = {};
+        nextColumns.forEach((col) => (newRow[col.id] = ""));
+        nextRows.push(newRow);
+      }
+
+      // ensure new columns exist in all rows
+      nextRows = nextRows.map((row) => {
+        const r = { ...row };
+        nextColumns.forEach((col) => {
+          if (!(col.id in r)) r[col.id] = "";
+        });
+        return r;
+      });
+
+      // paste data
+      pastedRows.forEach((row, rIndex) => {
+        const targetRow = startRow + rIndex;
+        row.forEach((value, cIndex) => {
+          const col = nextColumns[startCol + cIndex];
+          if (col) nextRows[targetRow][col.id] = value;
+        });
+      });
+
+      return { columns: nextColumns, rows: nextRows };
+    });
+  };
+
+  const isCellSelected = (r: number, c: number) => {
+    if (!anchor || !current) return false;
+
+    const minRow = Math.min(anchor.r, current.r);
+    const maxRow = Math.max(anchor.r, current.r);
+    const minCol = Math.min(anchor.c, current.c);
+    const maxCol = Math.max(anchor.c, current.c);
+
+    return r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
+  };
+
+  const addRow = () => {
+    tableStore.setState((state) => ({
+      rows: [
+        ...state.rows,
+        Object.fromEntries(state.columns.map((col) => [col.id, ""])),
+      ],
+    }));
+  };
+
+  const updateCell = (rowIndex: number, colId: string, value: string) => {
+    tableStore.setState((state) => {
+      const newRows = [...state.rows];
+      newRows[rowIndex] = { ...newRows[rowIndex], [colId]: value };
+      return { rows: newRows };
+    });
+  };
+  const deleteRow = useCallback((rowIndex: number) => {
+    tableStore.setState((state) => ({
+      rows: state.rows.filter((_, i) => i !== rowIndex),
+    }));
+  }, []);
+
+  const reorderRow = useCallback((startIndex: number, finishIndex: number) => {
+    tableStore.setState((state) => ({
+      rows: reorder({ list: state.rows, startIndex, finishIndex }),
+    }));
+  }, []);
 
   const handleReorder = useCallback(
     ({
@@ -41,7 +138,7 @@ export function ZustandTableBody() {
   }, [anchor, current, columns]);
 
   useEffect(() => {
-    useTableStore.setState({ selectedColumns: selectedColumnIds });
+    setFlashingColumns(selectedColumnIds);
   }, [selectedColumnIds]);
 
   useEffect(() => {
@@ -58,10 +155,10 @@ export function ZustandTableBody() {
           .slice(minCol, maxCol + 1)
           .map((col) => col.id);
 
-        useTableStore.getState().setHighlightedColumns(columnsToHighlight);
+        setHighlightedColumns(columnsToHighlight);
 
         setTimeout(() => {
-          useTableStore.getState().setHighlightedColumns([]);
+          setHighlightedColumns([]);
         }, 150);
 
         return;
@@ -191,8 +288,7 @@ export function ZustandTableBody() {
         }
       }
 
-      // Use Zustand pasteData
-      useTableStore.getState().pasteData(current.r, current.c, dataToPaste);
+      pasteData(current.r, current.c, dataToPaste);
 
       setEditingCell({ r: current.r, c: current.c });
     };
@@ -235,22 +331,52 @@ export function ZustandTableBody() {
   }, [handleReorder]);
 
   return (
-    <div className="relative">
-      {rows.map((row, rowIndex) => (
-        <ZustandRows key={rowIndex} rowData={row} rowIndex={rowIndex} />
-      ))}
+    <div className="flex flex-col items-start min-h-screen p-6 relative m-20">
+      {/* Toggle aligned to the left */}
+      <div className="w-full mb-4 flex justify-start">
+        <ViewToggle />
+      </div>
 
-      <button
-        onClick={() =>
-          useTableStore.setState((state) => {
-            state.rows.push(Object.fromEntries(columns.map((h) => [h.id, ""])));
-          })
-        }
-        className="flex items-center gap-2 cursor-pointer border-gray-100 py-1 px-2 text-[11px] text-gray-400 hover:bg-gray-50 w-full"
-      >
-        <PlusIcon className="w-3 h-3 text-gray-500" />
-        <span className="select-none">Add Row</span>
-      </button>
+      {/* Table container */}
+      <div className="flex flex-col border border-gray-200 rounded relative mt-5">
+        <div className="flex border-b border-gray-200">
+          <TableHeader
+            columns={columns}
+            rows={rows}
+            highlightedColumns={highlightedColumns}
+            flashingColumns={flashingColumns}
+          />
+        </div>
+        <div className="relative">
+          {rows.map((row, rowIndex) => (
+            <TableRows
+              key={rowIndex}
+              rowData={row}
+              rowIndex={rowIndex}
+              columns={columns}
+              deleteRow={deleteRow}
+              editingCell={editingCell}
+              setEditingCell={setEditingCell}
+              isDragging={isDragging}
+              setIsDragging={setIsDragging}
+              isCellSelected={isCellSelected}
+              setAnchor={setAnchor}
+              setCurrent={setCurrent}
+              updateCell={updateCell}
+              pasteData={pasteData}
+              rows={rows}
+            />
+          ))}
+
+          <button
+            onClick={addRow}
+            className="flex items-center gap-2 cursor-pointer border-gray-100 py-1 px-2 text-[11px] text-gray-400 hover:bg-gray-50 w-full"
+          >
+            <PlusIcon className="w-3 h-3 text-gray-500" />
+            <span className="select-none">Add Row</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

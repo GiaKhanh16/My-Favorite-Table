@@ -1,9 +1,9 @@
 import { TableCellsIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import { useState } from "react";
-import { useViewStore } from "../utils/Toggle";
+import { GlobalViewControl } from "../restricted/Stores/TableStore";
 
 export default function ViewToggle() {
-  const { view, setView } = useViewStore();
+  const { view, setView } = GlobalViewControl();
 
   return (
     <div className="flex justify-center items-center h-auto">

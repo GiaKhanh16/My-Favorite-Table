@@ -1,5 +1,5 @@
 import ZustandHeader from "./ZustandHeader";
-import { ZustandRow } from "./ZustandRow";
+import { ZustandTableBody } from "./ZustandRow";
 import ViewToggle from "./sub/Toggle";
 
 export default function ZustandContainer() {
@@ -16,7 +16,7 @@ export default function ZustandContainer() {
           <ZustandHeader />
         </div>
         <div className="flex">
-          <ZustandRow />
+          <ZustandTableBody />
         </div>
       </div>
     </div>
